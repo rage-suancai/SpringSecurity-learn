@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>盖尔银行 - 首页</title>
+  <script src="https://unpkg.com/axios@1.1.2/dist/axios.min.js"></script>
+</head>
+
+<body>
+
+  <div>
+    <label>
+      转账账号: <input type="text" id="account"/>
+    </label>
+    <button onclick="pay()">立即转账</button>
+  </div>
+
+</body>
+
+</html>
+
+<script>
+
+  function pay() {
+    const account = document.getElementById("account").value
+    axios.post('/mvc/cyber/pay', { account: account }, {
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'}
+    }).then(({data}) => {
+      if(data.success)
+        alert("转账成功")
+      else
+        alert("转账失败")
+    })
+  }
+
+</script>
