@@ -1,4 +1,4 @@
-package com.Security.CSRFTest.config;
+/**package com.Security.CSRFTest.config;
 
 import com.alibaba.fastjson2.support.spring6.http.converter.FastJsonHttpMessageConverter;
 import org.springframework.context.annotation.Bean;
@@ -49,13 +49,13 @@ public class WebConfiguration implements WebMvcConfigurer {
         converters.add(new FastJsonHttpMessageConverter());
     }
 
-    /**@Override
+    @Override
     public void configureDefaultServletHandling(DefaultServletHandlerConfigurer configurer) {
         configurer.enable();
     }
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/src/main/webapp/static/**").addResourceLocations("/src/main/webapp/static/");
-    }**/
+    }
 
-}
+}**/

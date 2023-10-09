@@ -1,4 +1,4 @@
-/**package com.Security.TestTheEnvironment.config;
+package com.Security.SecurityConfig.config;
 
 import com.alibaba.fastjson2.support.spring6.http.converter.FastJsonHttpMessageConverter;
 import org.springframework.context.annotation.Bean;
@@ -14,7 +14,7 @@ import org.thymeleaf.templateresolver.ITemplateResolver;
 
 import java.util.List;
 
-@ComponentScan("com.Security.TestTheEnvironment.controller")
+@ComponentScan("com.Security.SecurityConfig.controller")
 @EnableWebMvc
 @Configuration
 public class WebConfiguration implements WebMvcConfigurer {
@@ -33,7 +33,7 @@ public class WebConfiguration implements WebMvcConfigurer {
 
         SpringResourceTemplateResolver resolver = new SpringResourceTemplateResolver();
         resolver.setSuffix(".html");
-        resolver.setPrefix("classpath:/TestTheEnvironment/"); return resolver;
+        resolver.setPrefix("classpath:/SecurityConfigTest/"); return resolver;
 
     }
     @Bean
@@ -49,13 +49,13 @@ public class WebConfiguration implements WebMvcConfigurer {
         converters.add(new FastJsonHttpMessageConverter());
     }
 
-    @Override
+    /**@Override
     public void configureDefaultServletHandling(DefaultServletHandlerConfigurer configurer) {
         configurer.enable();
     }
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/src/main/webapp/static/**").addResourceLocations("/src/main/webapp/static/");
-    }
+    }**/
 
-}**/
+}

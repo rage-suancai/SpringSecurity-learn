@@ -1,6 +1,6 @@
-/**package com.Security.TestTheEnvironment.init;
+/**package com.Security.SFATest.init;
 
-import com.Security.TestTheEnvironment.config.WebConfiguration;
+import com.Security.SFATest.config.WebConfiguration;
 import org.springframework.web.servlet.support.AbstractAnnotationConfigDispatcherServletInitializer;
 
 public class Initializer extends AbstractAnnotationConfigDispatcherServletInitializer {

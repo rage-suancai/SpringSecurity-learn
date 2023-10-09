@@ -1,4 +1,4 @@
-package com.Security.CSRFTest.init;
+/**package com.Security.CSRFTest.init;
 
 import com.Security.CSRFTest.config.WebConfiguration;
 import org.springframework.web.servlet.support.AbstractAnnotationConfigDispatcherServletInitializer;
@@ -20,4 +20,4 @@ public class Initializer extends AbstractAnnotationConfigDispatcherServletInitia
         return new String[] { "/" };
     }
 
-}
+}**/

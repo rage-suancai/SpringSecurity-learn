@@ -1,6 +1,6 @@
-/**package com.Security.TestTheEnvironment.init;
+/**package com.Security.XSSTest.init;
 
-import com.Security.TestTheEnvironment.config.WebConfiguration;
+import com.Security.XSSTest.config.WebConfiguration;
 import org.springframework.web.servlet.support.AbstractAnnotationConfigDispatcherServletInitializer;
 
 public class Initializer extends AbstractAnnotationConfigDispatcherServletInitializer {

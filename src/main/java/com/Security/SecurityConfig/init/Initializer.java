@@ -1,6 +1,6 @@
-/**package com.Security.TestTheEnvironment.init;
+package com.Security.SecurityConfig.init;
 
-import com.Security.TestTheEnvironment.config.WebConfiguration;
+import com.Security.SecurityConfig.config.WebConfiguration;
 import org.springframework.web.servlet.support.AbstractAnnotationConfigDispatcherServletInitializer;
 
 public class Initializer extends AbstractAnnotationConfigDispatcherServletInitializer {
@@ -20,4 +20,6 @@ public class Initializer extends AbstractAnnotationConfigDispatcherServletInitia
         return new String[] { "/" };
     }
 
-}**/
+
+
+}

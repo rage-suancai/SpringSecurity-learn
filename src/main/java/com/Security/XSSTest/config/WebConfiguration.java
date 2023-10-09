@@ -1,4 +1,4 @@
-/**package com.Security.TestTheEnvironment.config;
+/**package com.Security.XSSTest.config;
 
 import com.alibaba.fastjson2.support.spring6.http.converter.FastJsonHttpMessageConverter;
 import org.springframework.context.annotation.Bean;
@@ -14,7 +14,7 @@ import org.thymeleaf.templateresolver.ITemplateResolver;
 
 import java.util.List;
 
-@ComponentScan("com.Security.TestTheEnvironment.controller")
+@ComponentScan("com.Security.XSSTest.controller")
 @EnableWebMvc
 @Configuration
 public class WebConfiguration implements WebMvcConfigurer {
@@ -33,7 +33,7 @@ public class WebConfiguration implements WebMvcConfigurer {
 
         SpringResourceTemplateResolver resolver = new SpringResourceTemplateResolver();
         resolver.setSuffix(".html");
-        resolver.setPrefix("classpath:/TestTheEnvironment/"); return resolver;
+        resolver.setPrefix("classpath:/XSSTest/"); return resolver;
 
     }
     @Bean
