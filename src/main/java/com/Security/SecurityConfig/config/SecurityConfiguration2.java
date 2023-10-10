@@ -1,4 +1,4 @@
-package com.Security.SecurityConfig.config;
+/**package com.Security.SecurityConfig.config;
 
 import org.apache.ibatis.datasource.pooled.PooledDataSource;
 import org.springframework.context.annotation.Bean;
@@ -57,4 +57,4 @@ public class SecurityConfiguration2 {
 
     }
 
-}
+}**/

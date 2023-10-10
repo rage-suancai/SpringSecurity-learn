@@ -1,11 +1,15 @@
-package com.Security.SecurityConfig.config;
+/**package com.Security.SecurityConfig.config;
 
 import com.alibaba.fastjson2.support.spring6.http.converter.FastJsonHttpMessageConverter;
+import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.ComponentScans;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.web.servlet.config.annotation.DefaultServletHandlerConfigurer;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 import org.thymeleaf.spring6.templateresolver.SpringResourceTemplateResolver;
@@ -14,7 +18,11 @@ import org.thymeleaf.templateresolver.ITemplateResolver;
 
 import java.util.List;
 
-@ComponentScan("com.Security.SecurityConfig.controller")
+@ComponentScans({
+        @ComponentScan("com.Security.SecurityConfig.controller"),
+        @ComponentScan("com.Security.SecurityConfig.service")
+})
+@MapperScan("com.Security.SecurityConfig.mapper")
 @EnableWebMvc
 @Configuration
 public class WebConfiguration implements WebMvcConfigurer {
@@ -49,13 +57,13 @@ public class WebConfiguration implements WebMvcConfigurer {
         converters.add(new FastJsonHttpMessageConverter());
     }
 
-    /**@Override
+    @Override
     public void configureDefaultServletHandling(DefaultServletHandlerConfigurer configurer) {
         configurer.enable();
     }
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/src/main/webapp/static/**").addResourceLocations("/src/main/webapp/static/");
-    }**/
+    }
 
-}
+}**/

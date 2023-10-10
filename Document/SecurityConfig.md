@@ -327,7 +327,7 @@
 ```
 
 通过使用UserDetailsManager对象 我们就能快速执行用户相关的管理操作 比如我们可以直接在网站上添加一个快速重置密码的接口
-首先需要配置一下JdbcUserDetailsManager 为其添加一个AuthenticationManager用于原密码的校验
+首先需要配置一下JdbcUserDetailsManager 为其添加一个AuthenticationManager用于原密码的校验:
 
 ```java
                     @Configuration
@@ -433,14 +433,77 @@
                     }
 ```           
 
+现在我们需要去实现这个loadUserByUsername方法 表示在验证的时候通过自定义的方式 根据给定的用户名查询用户 并封装为UserDetails对象返回
+然后由SpringSecurity将我们返回的对象与用户登录的信息进行核验 基本流程实际上跟之前是一样的 只是现在由我们自己来提供用户查询方式
 
+现在我们在数据库中创建一个自定义的用户表:
 
+<img src="https://image.itbaima.net/markdown/2023/07/03/ln4uZ1TFIe7qaCK.png"/>
 
+随便插入一点数据:
 
+<img src="https://image.itbaima.net/markdown/2023/07/03/tToR2JPykeuCK73.png"/>
 
+接着我们自行编写对应的查询操作 首先创建一个对应的实体类:
 
+```java
+                    @Data
+                    public class Account {
+                        int id;
+                        String username;
+                        String password;
+                    }
+```
 
+然后是根据用户名查询用户的Mapper接口:
 
+```java
+                    public interface UserMapper {
+    
+                        @Select("select * from user where username = #{username}")
+                        Account findUserByName(String username);
+                        
+                    }
+```
 
+最后我们在配置类上添加相应的包扫描:
 
+```java
+                    @EnableWebMvc
+                    @Configuration
+                    @ComponentScans({
+                            @ComponentScan("com.example.controller"),
+                            @ComponentScan("com.example.service")
+                    })
+                    @MapperScan("com.example.mapper")
+                    public class WebConfiguration implements WebMvcConfigurer {
+                      	...
+                    }
+```
 
+然后我们来到Service这边进行一下完善 从数据库中进行查询:
+
+```java
+                    @Service
+                    public class AuthorizeService implements UserDetailsService {
+                    
+                        @Resource
+                        UserMapper mapper;
+                    
+                        @Override
+                        public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+                            
+                            Account account = mapper.findUserByName(username);
+                            if(account == null)
+                                throw new UsernameNotFoundException("用户名或密码错误");
+                            return User
+                                    .withUsername(username)
+                                    .password(account.getPassword())
+                                    .build();
+                            
+                        }
+                        
+                    }
+```
+
+这样 我们就通过自定义的方式实现了数据库信息查询 并完成用户登录操作
