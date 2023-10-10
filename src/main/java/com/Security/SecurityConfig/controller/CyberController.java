@@ -1,51 +1,48 @@
 package com.Security.SecurityConfig.controller;
 
 import com.alibaba.fastjson2.JSONObject;
-import jakarta.servlet.http.HttpSession;
+import jakarta.annotation.Resource;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
-@RequestMapping("/cyber5")
 @Controller
 public class CyberController {
 
-    @GetMapping("/index")
-    public String index(HttpSession session) {
+    @Resource
+    private UserDetailsManager manager;
+    @Resource
+    private PasswordEncoder encoder;
 
-        if (session.getAttribute("login") != null) return "indexTest";
-        return "loginTest";
-
-    }
-
-    @PostMapping("/login")
-    public String loginTest(@RequestParam String username,
-                            @RequestParam String password,
-                            HttpSession session,
-                            Model model) {
-
-        if ("cxk".equals(username) && "123456".equals(password)) {
-            session.setAttribute("login", true); return "/indexTest";
-        } else {
-            model.addAttribute("status", true); return "loginTest";
-        }
-
+    @GetMapping("/")
+    public String index() {
+        return "indexTest";
     }
 
     @ResponseBody
     @PostMapping("/pay")
-    public JSONObject pay(@RequestParam String account, HttpSession session) {
+    public JSONObject pay(@RequestParam String account) {
 
         JSONObject object = new JSONObject();
 
-        if (session.getAttribute("login") != null) {
-            System.out.println("转账给: " + account + "成功 交易已完成");
-            object.put("success", true);
-        } else {
-            System.out.println("转账给: " + account + "失败 用户未登录");
-            object.put("success", false);
-        }
-        return object;
+        System.out.println("转账给" + account + "成功 交易已完成");
+        object.put("success", true); return object;
+
+    }
+
+    @ResponseBody
+    @PostMapping("/change-password")
+    public JSONObject changePassword(@RequestParam String oldPassword,
+                                     @RequestParam String newPassword) {
+
+        JSONObject object = new JSONObject();
+
+        manager.changePassword(oldPassword, encoder.encode(newPassword));
+        object.put("success", true); return object;
 
     }
 
