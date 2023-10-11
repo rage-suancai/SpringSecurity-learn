@@ -1,21 +1,23 @@
 package com.Security.AuthorizationTest.config;
 
+import org.apache.ibatis.datasource.pooled.PooledDataSource;
+import org.mybatis.spring.SqlSessionFactoryBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
+import javax.sql.DataSource;
+
+@EnableMethodSecurity
 @EnableWebSecurity
 @Configuration
-public class SecurityConfiguration {
+public class SecurityConfiguration2 {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -50,16 +52,21 @@ public class SecurityConfiguration {
     }
 
     @Bean
-    public UserDetailsService userDetailsService(PasswordEncoder encoder) {
+    public DataSource dataSource() {
 
-        UserDetails user = User
-                .withUsername("test")
-                .password(encoder.encode("123456"))
-                .roles("user")
-                .build();
-        return new InMemoryUserDetailsManager(user);
+        return new PooledDataSource("com.mysql.cj.jdbc.Driver",
+                "jdbc:mysql://localhost:3306/test?serverTimezone=Asia/Shanghai",
+                "root", "123456");
 
     }
+    @Bean
+    public SqlSessionFactoryBean sqlSessionFactoryBean(DataSource dataSource) {
+
+        SqlSessionFactoryBean bean = new SqlSessionFactoryBean();
+        bean.setDataSource(dataSource); return bean;
+
+    }
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();

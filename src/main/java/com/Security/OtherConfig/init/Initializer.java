@@ -1,6 +1,6 @@
 /**package com.Security.OtherConfig.init;
 
-import com.Security.OtherConfig.config.SecurityConfiguration;
+import com.Security.OtherConfig.config.SecurityConfiguration1;
 import com.Security.OtherConfig.config.WebConfiguration;
 import org.springframework.web.servlet.support.AbstractAnnotationConfigDispatcherServletInitializer;
 
@@ -8,7 +8,7 @@ public class Initializer extends AbstractAnnotationConfigDispatcherServletInitia
 
     @Override
     protected Class<?>[] getRootConfigClasses() {
-        return new Class[] { WebConfiguration.class, SecurityConfiguration.class };
+        return new Class[] { WebConfiguration.class, SecurityConfiguration1.class };
     }
 
     @Override

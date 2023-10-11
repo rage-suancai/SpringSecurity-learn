@@ -61,11 +61,149 @@ SpringSecurity为我们提供了两种授权方式:
 
 现在我们在查询用户时 需要添加其对应的角色:
 
+```java
+                    @Override
+                    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+    
+                        Account account = mapper.findUserByName(username);
+                        if(account == null) throw new UsernameNotFoundException("用户名或密码错误");
+                        return User
+                                .withUsername(account.getUsername())
+                                .password(account.getPassword())
+                                .roles(account.getRole()) // 添加角色 一个用户可以有一个或多个角色
+                                .build();
+                        
+                    }
+```
 
+这样就可以了 我们重启服务器登录看看:
 
+<img src="https://image.itbaima.net/markdown/2023/07/03/Zns4Vwb7zPLc6SQ.png"/>
 
+目前依然是可以正常登录的 但是我们随便访问一个其他的页面 就会被拦截并自动退回到登录界面:
 
+<img src="https://image.itbaima.net/markdown/2023/07/04/8aoGrM9mpYt6Xie.png"/>
 
+这是因为我们前面配置的是user角色 那么这个角色只能访问首页 其他的都不行 所以就会被自动拦截掉了 现在我们可以到数据库中对这个用户的角色进行修改 看看修改后是否能够访问到其他页面
 
+<img src="https://image.itbaima.net/markdown/2023/07/04/l9YkDaRJdtrmSZj.png"/>
 
+这样就可以访问其他页面不会被拦截了 不过因为我们没配置这个路径 所以出来的是404页面
 
+通过使用角色控制页面的访问 我们就可以让某些用户只能访问部分页面
+
+### 基于权限授权
+基于权限的授权与角色类似 需要以hasAnyAuthority或hasAuthority进行判断:
+
+```java
+                    .authorizeHttpRequests(auth -> {
+                        
+                        // 静态资源依然全部可以访问
+                        auth.requestMatchers("/static/**").permitAll();
+                        // 基于权限和基于角色其实差别并不大 使用方式是相同的
+                        auth.anyRequest().hasAnyAuthority("page:index");
+                        
+                    })
+```
+
+实际上权限跟角色相比只是粒度更细 由于使用方式差不多 这里不多做阐述
+
+### 使用注解权限判断
+除了直接配置以外 我们还可以以注解形式直接配置 首先需要在配置类(注意这里是在MVC的配置类上添加 因为这里只针对Controller进行过滤
+所有的Controller是由MVC配置类进行注册的 如果需要为Service或其他Bean也启用权限判断 则需要在Security的配置类上添加)上开启:
+
+```java
+                    @Configuration
+                    @EnableWebSecurity
+                    @EnableMethodSecurity // 开启方法安全校验
+                    public class SecurityConfiguration {
+                    	...
+                    }
+```
+
+现在我们就可以在我们想要进行权限校验的方法上添加注解了:
+
+```java
+                    @Controller
+                    public class HelloController {
+                    
+                        @PreAuthorize("hasRole('user')") // 直接使用hasRole方法判断是否包含某个角色
+                        @GetMapping("/")
+                        public String index(){
+                            return "index";
+                        }
+                    
+                        ...
+                        
+                    }
+```
+
+通过添加@PreAuthorize注解 在执行之前判断判断权限 如果没有对应的权限或是对应的角色 将无法访问页面
+
+这里其实是使用的就是我们之前讲解的SpEL表达式 我们可以直接在这里使用权限判断相关的方法 如果有忘记SpEL如何使用的可以回顾我们的Spring6核心篇
+所有可以进行权限判断的方法在SecurityExpressionRoot类中有定义 各位小伙伴可以自行前往查看
+
+同样的还有@PostAuthorize注解 但是它是在方法执行之后再进行拦截:
+
+```java
+                    @PostAuthorize("hasRole('user')")
+                    @RequestMapping("/")
+                    public String index(){
+    
+                        System.out.println("执行了");
+                        return "index";
+                        
+                    }
+```
+
+除了Controller以外 只要是由Spring管理的Bean都可以使用注解形式来控制权限 我们可以在任意方法上添加这个注解 只要不具备表达式中指定的访问权限 那么就无法执行方法并且会返回403页面:
+
+```java
+                    @Service
+                    public class UserService {
+                    
+                        @PreAuthorize("hasAnyRole('user')")
+                        public void test(){
+                            System.out.println("成功执行");
+                        }
+                        
+                    }
+```
+
+与具有相同功能的还有@Secured但是它不支持SpEL表达式的权限表示形式 并且需要添加"ROLE_"前缀 这里就不做演示了
+
+我们还可以使用@PreFilter和@PostFilter对集合类型的参数或返回值进行过滤
+
+比如: 
+
+```java
+                    @PreFilter("filterObject.equals('lbwnb')") // filterObject代表集合中每个元素 只要满足条件的元素才会留下
+                    public void test(List<String> list) {
+                        System.out.println("成功执行" + list);
+                    }
+```
+
+```java
+                    @RequestMapping("/")
+                    public String index() {
+    
+                        List<String> list = new LinkedList<>();
+                        list.add("lbwnb"); list.add("yyds");
+                        service.test(list);
+                        return "index";
+                        
+                    }
+```
+
+与@PreFilter类似的@PostFilter这里就不做演示了 它用于处理返回值 使用方法是一样的
+
+当有多个集合时 需要使用filterTarget进行指定:
+
+```java
+                    @PreFilter(value = "filterObject.equals('lbwnb')", filterTarget = "list2")
+                    public void test(List<String> list, List<String> list2){
+                        System.out.println("成功执行"+list);
+                    }
+```
+
+至此 有关Security的基本功能 我们就全部介绍完毕了 在后面的SpringBoot阶段 我们还会继续深入使用此框架 实现更多高级的功能

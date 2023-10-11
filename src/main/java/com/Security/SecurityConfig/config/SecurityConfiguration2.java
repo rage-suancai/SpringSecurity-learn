@@ -39,7 +39,8 @@ public class SecurityConfiguration2 {
     public DataSource dataSource() {
 
         return new PooledDataSource("com.mysql.cj.jdbc.Driver",
-                "jdbc:mysql://localhost:3306/test", "root", "123456");
+                "jdbc:mysql://localhost:3306/test?serverTimezone=Asia/Shanghai",
+                "root", "123456");
 
     }
 

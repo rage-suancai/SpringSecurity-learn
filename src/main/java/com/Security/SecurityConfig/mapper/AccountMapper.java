@@ -5,9 +5,9 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 
 @Mapper
-public interface UserMapper {
+public interface AccountMapper {
 
-    @Select("select * from test where username = #{username}")
+    @Select("select username,password from db_user where username = #{username}")
     Account findAccountByName(String username);
 
 }

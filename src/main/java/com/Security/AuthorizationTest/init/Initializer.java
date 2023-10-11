@@ -1,6 +1,6 @@
 package com.Security.AuthorizationTest.init;
 
-import com.Security.AuthorizationTest.config.SecurityConfiguration;
+import com.Security.AuthorizationTest.config.SecurityConfiguration2;
 import com.Security.AuthorizationTest.config.WebConfiguration;
 import org.springframework.web.servlet.support.AbstractAnnotationConfigDispatcherServletInitializer;
 
@@ -8,7 +8,7 @@ public class Initializer extends AbstractAnnotationConfigDispatcherServletInitia
 
     @Override
     protected Class<?>[] getRootConfigClasses() {
-        return new Class[] { WebConfiguration.class, SecurityConfiguration.class };
+        return new Class[] { WebConfiguration.class, SecurityConfiguration2.class };
     }
 
     @Override
