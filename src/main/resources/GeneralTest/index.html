@@ -281,7 +281,7 @@
                                     </li>
                                     <li>
                                         <form action="doLogout" method="post">
-                                            <input type="text" th:name="${_csrf.getParameterName()}" th:value="${_csrf.token}" hidden>
+                                            <!-- <input type="text" th:name="${_csrf.getParameterName()}" th:value="${_csrf.token}" hidden> -->
                                             <button type="submit">
                                                 <i class="fas fa-sign-out-alt"></i> logout
                                             </button>

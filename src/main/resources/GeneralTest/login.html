@@ -54,13 +54,12 @@
                             <div class="ad-other-feilds">
                                 <div class="ad-checkbox">
                                     <label>
-									<input type="checkbox" name="remeber" class="ad-checkbox">
-									<span>Remember Me</span>
+									<input type="checkbox" name="remember-me" class="ad-checkbox"> <span>Remember Me</span>
 									</label>
                                 </div>
                                 <a class="forgot-pws-btn" href="forgot-pws.html">Forgot Password?</a>
                             </div>
-                            <input type="text" th:name="${_csrf.getParameterName()}" th:value="${_csrf.token}" hidden>
+                            <!-- <input type="text" th:name="${_csrf.getParameterName()}" th:value="${_csrf.token}" hidden> -->
                             <div class="ad-auth-btn">
                                 <button type="submit" class="ad-btn ad-login-member">Login</button>
                             </div>

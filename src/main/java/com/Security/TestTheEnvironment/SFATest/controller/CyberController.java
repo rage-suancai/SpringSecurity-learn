@@ -1,4 +1,4 @@
-package com.Security.SFATest.controller;
+package com.Security.TestTheEnvironment.SFATest.controller;
 
 import com.alibaba.fastjson2.JSONObject;
 import jakarta.servlet.http.HttpSession;

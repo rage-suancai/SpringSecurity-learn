@@ -1,4 +1,4 @@
-package com.Security.CSRFTest.controller;
+package com.Security.TestTheEnvironment.CSRFTest.controller;
 
 import com.alibaba.fastjson2.JSONObject;
 import jakarta.servlet.http.HttpSession;

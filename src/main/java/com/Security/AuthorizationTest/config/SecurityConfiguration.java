@@ -1,4 +1,4 @@
-package com.Security.OtherConfig.config;
+package com.Security.AuthorizationTest.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -48,22 +48,6 @@ public class SecurityConfiguration {
                 .build();
 
     }
-
-    /*@Bean
-    public DataSource dataSource() {
-
-        return new PooledDataSource("com.mysql.cj.jdbc.Driver",
-                "jdbc:mysql://localhost:3306/test", "root", "123456");
-
-    }
-    @Bean
-    public PersistentTokenRepository tokenRepository(DataSource dataSource) {
-
-        JdbcTokenRepositoryImpl repository = new JdbcTokenRepositoryImpl();
-        repository.setCreateTableOnStartup(true);
-        repository.setDataSource(dataSource); return repository;
-
-    }*/
 
     @Bean
     public UserDetailsService userDetailsService(PasswordEncoder encoder) {

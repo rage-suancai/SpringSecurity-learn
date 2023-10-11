@@ -1,4 +1,4 @@
-package com.Security.XSSTest.controller;
+package com.Security.TestTheEnvironment.XSSTest.controller;
 
 import com.alibaba.fastjson2.JSONObject;
 import jakarta.servlet.http.HttpSession;

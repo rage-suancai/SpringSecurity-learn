@@ -1,4 +1,4 @@
-/*package com.Security.OtherConfig.init;
+package com.Security.AuthorizationTest.init;
 
 import org.springframework.security.web.context.AbstractSecurityWebApplicationInitializer;
 
@@ -6,4 +6,4 @@ public class SecurityInitializer extends AbstractSecurityWebApplicationInitializ
 
 
 
-}*/
+}

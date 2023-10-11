@@ -1,4 +1,4 @@
-/**package com.Security.OtherConfig.config;
+package com.Security.AuthorizationTest.config;
 
 import com.alibaba.fastjson2.support.spring6.http.converter.FastJsonHttpMessageConverter;
 import org.mybatis.spring.annotation.MapperScan;
@@ -19,10 +19,10 @@ import org.thymeleaf.templateresolver.ITemplateResolver;
 import java.util.List;
 
 @ComponentScans({
-        @ComponentScan("com.Security.OtherConfig.controller"),
-        @ComponentScan("com.Security.OtherConfig.service")
+        @ComponentScan("com.Security.AuthorizationTest.controller"),
+        @ComponentScan("com.Security.AuthorizationTest.service")
 })
-@MapperScan("com.Security.OtherConfig.mapper")
+@MapperScan("com.Security.AuthorizationTest.mapper")
 @EnableWebMvc
 @Configuration
 public class WebConfiguration implements WebMvcConfigurer {
@@ -66,4 +66,4 @@ public class WebConfiguration implements WebMvcConfigurer {
         registry.addResourceHandler("/static/**").addResourceLocations("classpath:/GeneralTest/static/");
     }
 
-}**/
+}
