@@ -65,5 +65,9 @@ public class CyberController {
         }).start(); return "index";
 
     }
+    /*@PostConstruct
+    public void init() {
+        SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_INHERITABLETHREADLOCAL);
+    }*/
 
 }

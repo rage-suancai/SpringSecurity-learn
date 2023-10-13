@@ -295,7 +295,7 @@
 
 ```java
                     @RequestMapping("/index")
-                    public String index(){
+                    public String index() {
     
                         SecurityContext context = SecurityContextHolder.getContext();
                         Authentication authentication = context.getAuthentication();
@@ -315,7 +315,7 @@
 
 ```java
                     @RequestMapping("/index")
-                    public String index(@SessionAttribute("SPRING_SECURITY_CONTEXT") SecurityContext context){
+                    public String index(@SessionAttribute("SPRING_SECURITY_CONTEXT") SecurityContext context) {
     
                         Authentication authentication = context.getAuthentication();
                         User user = (User) authentication.getPrincipal();
@@ -331,7 +331,7 @@
 
 ```java
                     @RequestMapping("/index")
-                    public String index(){
+                    public String index() {
     
                         new Thread(() -> { // 创建一个子线程去获取
                             SecurityContext context = SecurityContextHolder.getContext();
@@ -362,7 +362,7 @@ SecurityContextHolderStrategy有三个实现类:
 
 ```java
                     @PostConstruct
-                    public void init(){
+                    public void init() {
                         SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_INHERITABLETHREADLOCAL);
                     }
 ```
@@ -374,7 +374,7 @@ SecurityContextHolderStrategy有三个实现类:
 ```java
                     @RequestMapping("/auth")
                     @ResponseBody
-                    public String auth(){
+                    public String auth() {
     
                         SecurityContext context = SecurityContextHolder.getContext(); // 获取SecurityContext对象(当前会话肯定是没有登陆的)
                         UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken("Test", null,
@@ -385,25 +385,311 @@ SecurityContextHolderStrategy有三个实现类:
                     }
 ```
 
+在未登录的情况下 访问此地址将直接进行手动登录 再次访问/index页面 可以直接访问 说明手动设置认证信息成功
 
+疑惑: SecurityContext这玩意不是默认线程独占吗 那每次请求都是一个新的线程 按理说上一次的SecurityContext对象应该没了才对啊
+为什么再次请求依然能继续使用上一次SecurityContext中的认证信息呢?
 
+SecurityContext的生命周期: 请求到来时从Session中取出 放入SecurityContextHolder中 请求结束时从SecurityContextHolder取出
+并放到Session中 实际上就是依靠Session来存放的 一旦会话过期验证信息也跟着消失
 
+下一节我们将详细讨论它的实现过程
 
+### 安全上下文持久化过滤器
+SecurityContextHolderFilter也是内置的Filter 它就是专门用于处理SecurityContext的 这里先说一下大致流程 以便我们后续更加方便地理解:
 
+    当过滤器链执行到SecurityContextHolderFilter时 它会从HttpSession中把SecurityContext对象取出来(是存在Session中的 跟随会话的消失而消失)
+    然后放入SecurityContextHolder对象中 请求结束后 再把SecurityContext存入HttpSession中 并清除SecurityContextHolder内的SecurityContext对象
 
+我们还是直接进入到源码中:
 
+```java
+                    @Override
+	                public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+	                		throws IOException, ServletException {
+                        // 开始套娃
+	                	doFilter((HttpServletRequest) request, (HttpServletResponse) response, chain);
+	                }
+                
+	                private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+	                		throws ServletException, IOException {
+                        // 防止重复的安全请求 不需要关心 一般是直接走下面
+	                	if (request.getAttribute(FILTER_APPLIED) != null) {
+	                		chain.doFilter(request, response);
+	                		return;
+	                	}
+	                	request.setAttribute(FILTER_APPLIED, Boolean.TRUE);
+                        // 这里通过SecurityContextRepository的loadDeferredContext获取到SecurityContext对象的Supplier
+	                	Supplier<SecurityContext> deferredContext = this.securityContextRepository.loadDeferredContext(request);
+	                	...
+	                }
+```
 
+我们接着来看loadDeferredContext的实现细节 其中SecurityContextRepository的实现类是DelegatingSecurityContextRepository类
+这个类中维护了多个SecurityContextRepository实现类 而其本身并没有实现loadDeferredContext方法 而是靠内部维护的其他SecurityContextRepository实现类来完成:
 
+```java
+                    @Override
+	                public DeferredSecurityContext loadDeferredContext(HttpServletRequest request) {
+                        // DeferredSecurityContext是一个支持延时生成的SecurityContext 本质是一个SecurityContext的Supplier
+	                	DeferredSecurityContext deferredSecurityContext = null;
+                        // 遍历内部维护的其他SecurityContextRepository实现 一般包含以下两个:
+                        // 1. HttpSessionSecurityContextRepository
+                        // 2. RequestAttributeSecurityContextRepository
+	                	for (SecurityContextRepository delegate : this.delegates) {
+                            // 这个if-else语句其实为了添加多个SecurityContextRepository提供的SecurityContext并将其组成一个链状结构的DelegatingDeferredSecurityContext(至于为什么 我们接着往下看)
+	                		if (deferredSecurityContext == null) {
+	                			deferredSecurityContext = delegate.loadDeferredContext(request);
+	                		}
+	                		else {
+	                			DeferredSecurityContext next = delegate.loadDeferredContext(request);
+	                			deferredSecurityContext = new DelegatingDeferredSecurityContext(deferredSecurityContext, next);
+	                		}
+	                	}
+	                	return deferredSecurityContext;
+	                }
+```
 
+首先我们来看第一个HttpSessionSecurityContextRepository 它是第一个被遍历的实现:
 
+```java
+                    @Override
+	                public DeferredSecurityContext loadDeferredContext(HttpServletRequest request) {
+	                	Supplier<SecurityContext> supplier = () -> readSecurityContextFromSession(request.getSession(false)); // 从Session中取出SecurityContext
+	                	return new SupplierDeferredSecurityContext(supplier, this.securityContextHolderStrategy);
+	                }
+                
+	                public static final String SPRING_SECURITY_CONTEXT_KEY = "SPRING_SECURITY_CONTEXT";
+	                private String springSecurityContextKey = SPRING_SECURITY_CONTEXT_KEY;
+                
+	                private SecurityContext readSecurityContextFromSession(HttpSession httpSession) {
+	                	...
+                        // 实际上这里就是从Session中通过键“SPRING_SECURITY_CONTEXT”取出的SecurityContext
+                        // 跟我们上一节使用的是完全一样的 这下就很清晰了
+                        // 如果用户没有登录验证 那么这里获取到的SecurityContext就是null了
+	                	Object contextFromSession = httpSession.getAttribute(this.springSecurityContextKey);
+	                	...
+	                	return (SecurityContext) contextFromSession;
+	                }
+```
 
+最后返回回去的是一个SupplierDeferredSecurityContext对象:
 
+```java
+                    final class SupplierDeferredSecurityContext implements DeferredSecurityContext {
 
+                    	private static final Log logger = LogFactory.getLog(SupplierDeferredSecurityContext.class);
+                    
+                    	private final Supplier<SecurityContext> supplier;
+                    
+                    	private final SecurityContextHolderStrategy strategy;
+                    
+                    	private SecurityContext securityContext;
+                    
+                    	private boolean missingContext;
+                    
+                    	SupplierDeferredSecurityContext(Supplier<SecurityContext> supplier, SecurityContextHolderStrategy strategy) {
+                    		this.supplier = supplier;
+                    		this.strategy = strategy;
+                    	}
+                    
+                    	@Override
+                    	public SecurityContext get() {
+                            // 在获取SecurityContext时会进行一次初始化
+                    		init();
+                    		return this.securityContext;
+                    	}
+                    
+                    	@Override
+                    	public boolean isGenerated() {
+                    		init();
+                            // 初始化后判断是否为未登录的SecurityContext
+                    		return this.missingContext;
+                    	}
+                    
+                    	private void init() {
+                            // 如果securityContext不为null表示已经初始化过了
+                    		if (this.securityContext != null) {
+                    			return;
+                    		}
+                    		// 直接通过supplier获取securityContext对象
+                    		this.securityContext = this.supplier.get();
+                            // 如果securityContext对象为null 那么就标记missingContext
+                    		this.missingContext = (this.securityContext == null);
+                    		if (this.missingContext) {
+                                // 当missingContext为真时 说明没有securityContext(一般是未登录的情况)
+                                // 那么就创建一个空的securityContext 不包含任何认证信息
+                    			this.securityContext = this.strategy.createEmptyContext();
+                                // 日志无视就好
+                    			if (logger.isTraceEnabled()) {
+                    				logger.trace(LogMessage.format("Created %s", this.securityContext));
+                    			}
+                    		}
+                    	}
+                    
+                    }
+```
 
+接着是第二个被遍历的实现RequestAttributeSecurityContextRepository类:
 
+```java
+                    @Override
+	                public DeferredSecurityContext loadDeferredContext(HttpServletRequest request) {
+	                	Supplier<SecurityContext> supplier = () -> getContext(request);
+                        // 同样是返回SupplierDeferredSecurityContext对象
+	                	return new SupplierDeferredSecurityContext(supplier, this.securityContextHolderStrategy);
+	                }
+                
+	                private SecurityContext getContext(HttpServletRequest request) {
+                        // 通过HttpServletRequest的Attribute获取SecurityContext
+                        // 由于一般情况下没有设定过 因此得到的就是null
+	                	return (SecurityContext) request.getAttribute(this.requestAttributeName);
+	                }
+```
 
+最后 两个SecurityContext就会以链式存放在DelegatingDeferredSecurityContext对象中 一并返回了 它的内部长这样:
 
+```java
+                    static final class DelegatingDeferredSecurityContext implements DeferredSecurityContext {
 
+                    		private final DeferredSecurityContext previous;
+                    
+                    		private final DeferredSecurityContext next;
+                    
+                    		DelegatingDeferredSecurityContext(DeferredSecurityContext previous, DeferredSecurityContext next) {
+                    			this.previous = previous;
+                    			this.next = next;
+                    		}
+                    
+                    		@Override
+                    		public SecurityContext get() {
+                                // 在获取SecurityContext时 会首先从最前面的开始获取
+                    			SecurityContext securityContext = this.previous.get();
+                                // 如果最前面的SecurityContext是已登录的 那么直接返回这个SecurityContext
+                    			if (!this.previous.isGenerated()) {
+                    				return securityContext;
+                    			}
+                                // 否则继续看后面的 也许后面的会有已登录的(实在没有就直接返回一个空的SecurityContext了)
+                    			return this.next.get();
+                    		}
+                    
+                    		@Override
+                    		public boolean isGenerated() {
+                    			return this.previous.isGenerated() && this.next.isGenerated();
+                    		}
+                    }
+```
 
+兜了这么大一圈 现在回到一开始的Filter中:
 
+```java
+                    private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+	                		                throws ServletException, IOException {
+	                	            ...
+                        Supplier<SecurityContext> deferredContext = this.securityContextRepository.loadDeferredContext(request);
+                                    // 拿到最终的SecurityContext的Supplier后 继续下面的语句
+	                	            try {
+                                        // 向securityContextHolderStrategy中设置我们上面得到的DeferredSecurityContext
+	                		            this.securityContextHolderStrategy.setDeferredContext(deferredContext);
+                                        // 请求前的任务已完成 继续其他过滤器了
+	                		            chain.doFilter(request, response);
+	                	            }
+	                	            finally {
+                                        // 请求结束后 清理掉securityContextHolderStrategy中的DeferredSecurityContext
+	                		            this.securityContextHolderStrategy.clearContext();
+	                		            request.removeAttribute(FILTER_APPLIED);
+	                	            }
+	                    }
+```
 
+最后我们再来看一下我们之前通过SecurityContextHolder是如何获取到SecurityContext的:
+
+```java
+                    public class SecurityContextHolder {
+                    	...
+                        private static String strategyName = System.getProperty(SYSTEM_PROPERTY);
+                    	private static SecurityContextHolderStrategy strategy;
+                    	private static int initializeCount = 0;
+                    
+                    	static {
+                            // 类加载时会进行一次初始化
+                    		initialize();
+                    	}
+                    
+                    	private static void initialize() {
+                            // 初始化会将对应的SecurityContextHolderStrategy对象给创建
+                    		initializeStrategy();
+                    		initializeCount++;
+                    	}
+                    
+                        // 初始化SecurityContextHolderStrategy对象
+                    	private static void initializeStrategy() {
+                    		...
+                    		// 尝试加载系统配置中设定的Strategy实现类 默认是MODE_THREADLOCAL
+                    		try {
+                    			Class<?> clazz = Class.forName(strategyName);
+                    			Constructor<?> customStrategy = clazz.getConstructor();
+                                // 这里直接根据配置中的类名 用反射怒艹一个对象出来
+                    			strategy = (SecurityContextHolderStrategy) customStrategy.newInstance();
+                    		}
+                    		catch (Exception ex) {
+                    			ReflectionUtils.handleReflectionException(ex);
+                    		}
+                    	}
+                    
+                    	// 清除Context中的内容 实际上就是清理SecurityContextHolderStrategy中的内容
+                    	public static void clearContext() {
+                    		strategy.clearContext();
+                    	}
+                    
+                    	// 获取SecurityContext对象
+                    	public static SecurityContext getContext() {
+                            // 获取SecurityContext实际上也是通过SecurityContextHolderStrategy根据策略来获取
+                    		return strategy.getContext();
+                    	}
+                    	
+                      ...
+                    }
+```
+
+我们发现 实际上SecurityContextHolder获取SecurityContext对象 就是通过SecurityContextHolderStrategy根据策略来获取 我们直接来看SecurityContextHolderStrategy的实现类:
+
+```java
+                    final class ThreadLocalSecurityContextHolderStrategy implements SecurityContextHolderStrategy {
+
+                        // 内部维护一个ThreadLocal对象 按线程存储对应的DeferredSecurityContext
+                    	private static final ThreadLocal<Supplier<SecurityContext>> contextHolder = new ThreadLocal<>();
+                    
+                    	@Override
+                    	public void clearContext() {
+                            // 清理实际上是直接清理掉ThreadLocal中存的对象
+                    		contextHolder.remove();
+                    	}
+                    
+                    	@Override
+                    	public SecurityContext getContext() {
+                            // 获取也很简单 直接通过Supplier拿到需要的SecurityContext对象
+                    		return getDeferredContext().get();
+                    	}
+                    
+                    	@Override
+                    	public Supplier<SecurityContext> getDeferredContext() {
+                    		Supplier<SecurityContext> result = contextHolder.get();
+                            // 如果存储的DeferredSecurityContext为null 这里临时创建一个空的SecurityContext并保存
+                    		if (result == null) {
+                    			SecurityContext context = createEmptyContext();
+                    			result = () -> context;
+                    			contextHolder.set(result);
+                    		}
+                    		return result;
+                    	}
+                    
+                    	...
+                    
+                    }
+```
+
+这样 整个流程其实就很清楚了 项目启动时 SecurityContextHolder会自动根据配置创建对应的SecurityContextHolderStrategy对象 当我们的请求到来之后 首先会经过SecurityContextHolderFilter
+然后在这个阶段 通过SecurityContextRepository来将不同地方存储(一般是Session中存储)的SecurityContext对象取出并封装为DefferdSecurityContext
+然后将其添加到一开始创建好的SecurityContextHolderStrategy对象中 这样 我们的Controller在处理时就能直接从SecurityContextHolder取出SecurityContext对象了
+最后在处理结束返回响应时 SecurityContextHolderFilter也会将SecurityContextHolderStrategy存储的DefferdSecurityContext清除掉 至此 一个完整流程结束
